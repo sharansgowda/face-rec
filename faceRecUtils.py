@@ -19,7 +19,7 @@ class FaceRecognition:
     known_face_names = []
     PROCESS_CURRENT_FRAME: bool = True
     MIN_CONFIDENCE_THRESHOLD: float = 92.5
-    last_recognized_face = []
+    last_recognized_usn: list[int] = []    
 
     # Take attendence during a particular interval only
     attendance_time_start = datetime.time(hour=8)
@@ -32,7 +32,7 @@ class FaceRecognition:
         # Reset Parameters 
         allow_attendance = False
         print(f"Attendance taken only during time interval of {attendance_time_start.strftime('%I:%M %p')} to {attendance_time_end.strftime('%I:%M %p')}")
-        last_recognized_face = []
+        last_recognized_usn = []
 
     def __init__(self) -> None:
         pass
@@ -63,13 +63,28 @@ class FaceRecognition:
                 print(f"Student {usn} not found in the database.")
         except Exception as e:
             print(f"Error updating attendance: {e}")
+    
+    @staticmethod
+    def annotate_info(frame: cv2.typing.MatLike, usn: int) -> None:
+        """ Display information of the recognized person on the frame. """
+        student = session.query(Student).filter(Student.usn == usn).first()
+        if student:
+            font = cv2.FONT_HERSHEY_COMPLEX
+            attendance_text = f"Attendance: {student.attendance}"
+            # print(attendance_text)
+            cv2.putText(frame, attendance_text, (10, 60), font, 0.8, (0, 255, 0), 2)
+            last_attendance_time_text = f"Last Attendance Time: {student.last_attendance_time.strftime('%I:%M:%S %p')}"
+            cv2.putText(frame, last_attendance_time_text, (10, 90), font, 0.8, (0, 255, 0), 2)
+            # print(last_attendance_time_text)
+        else:
+            print(f"Student with USN {usn} not found in the database.")
 
     @staticmethod
     def desired_name_format(usn: int) -> str:
         """ Return upper() of first name only so that it can fix in bbox """
         name: str = get_name_from_usn(usn)
         name = name.split(' ')[0]
-        return name.upper()
+        return f"{name.upper()} (1RVU23CSE{usn})"
 
     def run_recognition(self):
         video_capture = cv2.VideoCapture(0)
@@ -122,9 +137,9 @@ class FaceRecognition:
                         confidence: float = self.face_confidence(face_distances[best_match_index])
                         
                         # Update Attendance With Set Flags
-                        if FaceRecognition.allow_attendance and (usn not in self.last_recognized_face) and (confidence > self.MIN_CONFIDENCE_THRESHOLD):
+                        if FaceRecognition.allow_attendance and (usn not in self.last_recognized_usn) and (confidence > self.MIN_CONFIDENCE_THRESHOLD):
                             self.update_attendance(usn)
-                            self.last_recognized_face.append(usn)
+                            self.last_recognized_usn.append(usn)
 
                     self.face_names.append(self.desired_name_format(usn))
 
@@ -143,12 +158,15 @@ class FaceRecognition:
                 frameColor: tuple = (0, 191, 255)
                 # Draw a box around the face
                 cv2.rectangle(frame, (left, top), (right, bottom), frameColor, 2)
-
+                
                 # Draw a label with a name below the face
                 cv2.rectangle(frame, (left, bottom - 35), (right, bottom), frameColor, cv2.FILLED)
                 font = cv2.FONT_HERSHEY_DUPLEX
                 cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.8, (255, 255, 255), 1)
-
+            
+                # Draw attendance information for person in the current frame
+                FaceRecognition.annotate_info(frame, usn)
+            
             # FPS
             cv2.putText(frame, "FPS: {:.2f}".format(vidFps), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2, cv2.LINE_AA)
 

@@ -12,9 +12,6 @@ import datetime
 from encoding import DEFAULT_FACE_DIR_PATH
 from database import parse_all_encodings, session, Student, get_name_from_usn
 
-import tkinter as tk
-from PIL import Image, ImageTk
-
 class FaceRecognition:
     face_locations = []
     face_encodings = []
@@ -37,16 +34,15 @@ class FaceRecognition:
         attendance_time_start = datetime.time(hour=8)
         attendance_time_end = datetime.time(hour=9, minute=30)
 
-        if attendance_time_start <= datetime.datetime.now().time() <= attendance_time_end:
-            allow_attendance = True
-        else:
+        if not (attendance_time_start <= datetime.datetime.now().time() <= attendance_time_end):
             # Reset Parameters
             allow_attendance = False
             print(f"Attendance taken only during time interval of {attendance_time_start.strftime('%I:%M %p')} to {attendance_time_end.strftime('%I:%M %p')}")
             last_recognized_usn = []
+
         return allow_attendance
 
-    allow_attendance: bool = set_allow_attendance(removeTimeConstraints=False)
+    allow_attendance: bool = set_allow_attendance(removeTimeConstraints=True)
 
     @staticmethod
     def face_confidence(face_distance, face_match_threshold: float = 0.6) -> float:
@@ -77,7 +73,7 @@ class FaceRecognition:
     def annotate_info(frame: cv2.typing.MatLike, usn: int) -> None:
         """ Display information of the recognized person on the frame. """
         student = session.query(Student).filter(Student.usn == usn).first()
-        if student:
+        if student and FaceRecognition.allow_attendance:
             font = cv2.FONT_HERSHEY_COMPLEX
             attendance_text = f"Attendance: {student.attendance}"
             cv2.putText(frame, attendance_text, (10, 60), font, 0.8, (0, 255, 0), 2)
@@ -143,6 +139,7 @@ class FaceRecognition:
                 prev_time = current_time
                 frames = 0
 
+
             if self.PROCESS_CURRENT_FRAME:
                 # resize the frame to 1/4 size to save computation power
                 small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA)
@@ -153,12 +150,13 @@ class FaceRecognition:
                 self.face_encodings = face_recognition.face_encodings(rgb_frame, self.face_locations)
 
                 self.face_names = []
-                
+
                 usn: int = -1
-                confidence: float = 0.0
+                confidence: float = 0.0            
 
                 for face_encoding in self.face_encodings:
                     matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding)
+                    
                     # lower the face distance, better the match
                     face_distances = face_recognition.face_distance(self.known_face_encodings, face_encoding)
                     # get index of lowest face distance
@@ -193,12 +191,4 @@ class FaceRecognition:
         video_capture.release()
         cv2.destroyAllWindows()
 
-if __name__ == "__main__":
 
-    tic = time.perf_counter()
-    fr = FaceRecognition()
-    fr.run_recognition()
-    toc = time.perf_counter()
-
-    print(f"Total Execution Time: {toc - tic:.2f} second(s)")
-    # app = App(tk.Tk(), "Webcam Feed")

@@ -97,18 +97,26 @@ class FaceRecognition:
         name = name.split(' ')[0]
         return f"{name.upper()} (1RVU23CSE{usn})"
     
-    @staticmethod
-    def _draw_face_bbox(frame: cv2.typing.MatLike, left: int, right: int, top: int, bottom: int, name: str) -> None:
+    def _draw_face_bbox(self, frame: cv2.typing.MatLike) -> None:
         """ Draw a bounding box around the face of the person with their name on it """
-        # yellow frame color
-        frame_color: tuple = (0, 191, 255)
-        font = cv2.FONT_HERSHEY_DUPLEX
-        # Draw a box around the face
-        cv2.rectangle(frame, (left, top), (right, bottom), frame_color, 2)
-        # Draw a label with a name below the face
-        cv2.rectangle(frame, (left, bottom - 35), (right, bottom), frame_color, cv2.FILLED)
-        cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.7, (255, 255, 255), 1)
+        for (top, right, bottom, left), name in zip(self.face_locations, self.face_names):
+            # bring back to original dimensions
+            top *= 4
+            right *= 4
+            bottom *= 4
+            left *= 4
+            
+            # yellow frame color
+            frame_color: tuple = (0, 191, 255)
+            font = cv2.FONT_HERSHEY_DUPLEX
 
+            # Draw a box around the face
+            cv2.rectangle(frame, (left, top), (right, bottom), frame_color, 2)
+
+            # Draw a label with a name below the face
+            cv2.rectangle(frame, (left, bottom - 35), (right, bottom), frame_color, cv2.FILLED)
+            cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.7, (255, 255, 255), 1)
+            
     def run_recognition(self) -> cv2.typing.MatLike:
         video_capture = cv2.VideoCapture(0)
 
@@ -145,11 +153,12 @@ class FaceRecognition:
                 self.face_encodings = face_recognition.face_encodings(rgb_frame, self.face_locations)
 
                 self.face_names = []
+                
+                usn: int = -1
+                confidence: float = 0.0
+
                 for face_encoding in self.face_encodings:
                     matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding)
-                    usn: int = -1
-                    confidence: float = 0.0
-
                     # lower the face distance, better the match
                     face_distances = face_recognition.face_distance(self.known_face_encodings, face_encoding)
                     # get index of lowest face distance
@@ -169,18 +178,11 @@ class FaceRecognition:
             # Process alternate frames
             self.PROCESS_CURRENT_FRAME = not self.PROCESS_CURRENT_FRAME
 
-            # Display annotations
-            for (top, right, bottom, left), name in zip(self.face_locations, self.face_names):
-                # bring back to original dimensions
-                top *= 4
-                right *= 4
-                bottom *= 4
-                left *= 4
-
-                FaceRecognition._draw_face_bbox(frame, left, right, top, bottom, name)
-                # Draw attendance information for person in the current frame
-                FaceRecognition.annotate_info(frame, usn)
-
+            self._draw_face_bbox(frame)
+            
+            # Draw attendance information for person in the current frame
+            FaceRecognition.annotate_info(frame, usn)
+            
             # Annotate FPS
             cv2.putText(frame, "FPS: {:.2f}".format(vidFps), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2, cv2.LINE_AA)
 
@@ -190,7 +192,6 @@ class FaceRecognition:
         
         video_capture.release()
         cv2.destroyAllWindows()
-        return ret, frame
 
 if __name__ == "__main__":
 

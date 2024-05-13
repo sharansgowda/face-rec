@@ -4,12 +4,16 @@ import pickle
 import math
 import numpy as np
 import os
+import pytz
 import sys
 import time
 import multiprocessing
 import datetime
 from encoding import DEFAULT_FACE_DIR_PATH
 from database import parse_all_encodings, session, Student, get_name_from_usn
+
+import tkinter as tk
+from PIL import Image, ImageTk
 
 class FaceRecognition:
     face_locations = []
@@ -18,24 +22,31 @@ class FaceRecognition:
     known_face_encodings = []
     known_face_names = []
     PROCESS_CURRENT_FRAME: bool = True
-    MIN_CONFIDENCE_THRESHOLD: float = 92.5
-    last_recognized_usn: list[int] = []    
-
-    # Take attendence during a particular interval only
-    attendance_time_start = datetime.time(hour=8)
-    attendance_time_end = datetime.time(hour=9, minute=30)
-    allow_attendance: bool = True
-    
-    if attendance_time_start <= datetime.datetime.now().time() <= attendance_time_end:
-       allow_attendance = True 
-    else:
-        # Reset Parameters 
-        allow_attendance = False
-        print(f"Attendance taken only during time interval of {attendance_time_start.strftime('%I:%M %p')} to {attendance_time_end.strftime('%I:%M %p')}")
-        last_recognized_usn = []
+    MIN_CONFIDENCE_THRESHOLD: float = 93.5
+    last_recognized_usn: list[int] = []
 
     def __init__(self) -> None:
         pass
+
+    @staticmethod
+    def set_allow_attendance(removeTimeConstraints: bool = False):
+        if removeTimeConstraints:
+            return True
+        # Take attendence during a particular interval only
+        allow_attendance: bool = True
+        attendance_time_start = datetime.time(hour=8)
+        attendance_time_end = datetime.time(hour=9, minute=30)
+
+        if attendance_time_start <= datetime.datetime.now().time() <= attendance_time_end:
+            allow_attendance = True
+        else:
+            # Reset Parameters
+            allow_attendance = False
+            print(f"Attendance taken only during time interval of {attendance_time_start.strftime('%I:%M %p')} to {attendance_time_end.strftime('%I:%M %p')}")
+            last_recognized_usn = []
+        return allow_attendance
+
+    allow_attendance: bool = set_allow_attendance(removeTimeConstraints=False)
 
     @staticmethod
     def face_confidence(face_distance, face_match_threshold: float = 0.6) -> float:
@@ -59,11 +70,9 @@ class FaceRecognition:
                 student.last_attendance_time = datetime.datetime.utcnow()
                 session.commit()
                 print(f"Attendance updated for {student.name} with usn 1RVU23CSE{student.usn}.")
-            else:
-                print(f"Student {usn} not found in the database.")
         except Exception as e:
             print(f"Error updating attendance: {e}")
-    
+
     @staticmethod
     def annotate_info(frame: cv2.typing.MatLike, usn: int) -> None:
         """ Display information of the recognized person on the frame. """
@@ -71,13 +80,15 @@ class FaceRecognition:
         if student:
             font = cv2.FONT_HERSHEY_COMPLEX
             attendance_text = f"Attendance: {student.attendance}"
-            # print(attendance_text)
             cv2.putText(frame, attendance_text, (10, 60), font, 0.8, (0, 255, 0), 2)
-            last_attendance_time_text = f"Last Attendance Time: {student.last_attendance_time.strftime('%I:%M:%S %p')}"
+
+            last_attendance_time = student.last_attendance_time
+            local_timezone = pytz.timezone('Asia/Kolkata')
+            local_time = last_attendance_time.replace(tzinfo=pytz.utc).astimezone(local_timezone)
+            last_attendance_time_text = f"Last Attendance Time: {local_time.strftime('%I:%M:%S %p')}"
             cv2.putText(frame, last_attendance_time_text, (10, 90), font, 0.8, (0, 255, 0), 2)
-            # print(last_attendance_time_text)
-        else:
-            print(f"Student with USN {usn} not found in the database.")
+        # else:
+        #     print(f"Student with USN {usn} not found in the database.")
 
     @staticmethod
     def desired_name_format(usn: int) -> str:
@@ -85,8 +96,20 @@ class FaceRecognition:
         name: str = get_name_from_usn(usn)
         name = name.split(' ')[0]
         return f"{name.upper()} (1RVU23CSE{usn})"
+    
+    @staticmethod
+    def _draw_face_bbox(frame: cv2.typing.MatLike, left: int, right: int, top: int, bottom: int, name: str) -> None:
+        """ Draw a bounding box around the face of the person with their name on it """
+        # yellow frame color
+        frame_color: tuple = (0, 191, 255)
+        font = cv2.FONT_HERSHEY_DUPLEX
+        # Draw a box around the face
+        cv2.rectangle(frame, (left, top), (right, bottom), frame_color, 2)
+        # Draw a label with a name below the face
+        cv2.rectangle(frame, (left, bottom - 35), (right, bottom), frame_color, cv2.FILLED)
+        cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.7, (255, 255, 255), 1)
 
-    def run_recognition(self):
+    def run_recognition(self) -> cv2.typing.MatLike:
         video_capture = cv2.VideoCapture(0)
 
         if not video_capture.isOpened():
@@ -135,7 +158,7 @@ class FaceRecognition:
                     if matches[best_match_index]:
                         usn = self.known_face_names[best_match_index]
                         confidence: float = self.face_confidence(face_distances[best_match_index])
-                        
+
                         # Update Attendance With Set Flags
                         if FaceRecognition.allow_attendance and (usn not in self.last_recognized_usn) and (confidence > self.MIN_CONFIDENCE_THRESHOLD):
                             self.update_attendance(usn)
@@ -154,20 +177,11 @@ class FaceRecognition:
                 bottom *= 4
                 left *= 4
 
-                # yellow frame color
-                frameColor: tuple = (0, 191, 255)
-                # Draw a box around the face
-                cv2.rectangle(frame, (left, top), (right, bottom), frameColor, 2)
-                
-                # Draw a label with a name below the face
-                cv2.rectangle(frame, (left, bottom - 35), (right, bottom), frameColor, cv2.FILLED)
-                font = cv2.FONT_HERSHEY_DUPLEX
-                cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.8, (255, 255, 255), 1)
-            
+                FaceRecognition._draw_face_bbox(frame, left, right, top, bottom, name)
                 # Draw attendance information for person in the current frame
                 FaceRecognition.annotate_info(frame, usn)
-            
-            # FPS
+
+            # Annotate FPS
             cv2.putText(frame, "FPS: {:.2f}".format(vidFps), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2, cv2.LINE_AA)
 
             cv2.imshow("FACE RECOGNITION", frame)
@@ -176,7 +190,7 @@ class FaceRecognition:
         
         video_capture.release()
         cv2.destroyAllWindows()
-
+        return ret, frame
 
 if __name__ == "__main__":
 
@@ -186,3 +200,4 @@ if __name__ == "__main__":
     toc = time.perf_counter()
 
     print(f"Total Execution Time: {toc - tic:.2f} second(s)")
+    # app = App(tk.Tk(), "Webcam Feed")

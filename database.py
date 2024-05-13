@@ -7,13 +7,13 @@ from PIL import Image
 from io import BytesIO
 import numpy as np
 from sqlalchemy import (
-    create_engine, 
-    Column, 
-    String, 
-    Integer, 
-    CHAR, 
-    LargeBinary, 
-    PickleType, 
+    create_engine,
+    Column,
+    String,
+    Integer,
+    CHAR,
+    LargeBinary,
+    PickleType,
     Enum,
     DateTime
 )
@@ -21,15 +21,16 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from encoding import encode_face, get_face_encodings, DEFAULT_FACE_DIR_PATH
 Base = declarative_base()
 
+
 class Student(Base):
     __tablename__ = "students"
-    
+
     GENDERS = ("Male", "Female", "Others")
 
     usn = Column("usn", Integer, primary_key=True, autoincrement=True, index=True)
     name = Column("name", String, nullable=False)
     course = Column("course", String, nullable=False)
-    year_join = Column("year of join", Integer, nullable=False)
+    year_join = Column("year of joining", Integer, nullable=False)
     attendance = Column("attendance", Integer, nullable=False, default=0)
     section = Column("section", CHAR, nullable=False)
     gender = Column("gender", Enum(*GENDERS), nullable=False)
@@ -45,6 +46,7 @@ engine = create_engine("sqlite:///database.db", echo=False)
 Base.metadata.create_all(bind=engine)
 Session = sessionmaker(bind=engine)
 session = Session()
+
 
 def get_face_image(face_image_name: Path | str, face_path: Path | str = DEFAULT_FACE_DIR_PATH) -> bytes:
     """ Return images as bytes """
@@ -68,8 +70,8 @@ def create_student(usn: int, name: str, course: str, year_join: int, attendance:
 
         if face_image is None:
             print(f"Image file '{image_name}' not found. Skipping student creation.")
-            return 
-            
+            return
+
         # Check if the student already exists in the database
         existing_student = session.query(Student).filter(Student.usn == usn).first()
         if existing_student:
@@ -99,9 +101,10 @@ def create_student(usn: int, name: str, course: str, year_join: int, attendance:
     except Exception as e:
         print(f"Error creating student: {e}")
 
+
 def get_all_student() -> None:
     try:
-        with session: 
+        with session:
             result = session.query(Student).all()
             if result:
                 for r in result:
@@ -111,9 +114,10 @@ def get_all_student() -> None:
     except Exception as e:
         print(f"Error fetching all students: {e}")
 
+
 def view_face(usn: int) -> None:
     try:
-        student = session.query(Student).filter(Student.usn == usn).first()    
+        student = session.query(Student).filter(Student.usn == usn).first()
         if student:
             student_image = Image.open(BytesIO(student.face_image))
             student_image.show()
@@ -124,6 +128,7 @@ def view_face(usn: int) -> None:
     except Exception as e:
         print(f"Error viewing face: {e}")
 
+
 def parse_encoding(usn: int) -> tuple[str, np.ndarray]:
     try:
         student = session.query(Student).filter(Student.usn == usn).first()
@@ -133,6 +138,7 @@ def parse_encoding(usn: int) -> tuple[str, np.ndarray]:
             print(f"No face encoding found for student with USN: {usn}")
     except Exception as e:
         print(f"Error parsing encodings: {e}")
+
 
 def get_name_from_usn(usn: int) -> str | None:
     try:
@@ -147,6 +153,7 @@ def get_name_from_usn(usn: int) -> str | None:
             return None
     except Exception as e:
         print(f"Error finding name: {e}")
+
 
 def parse_all_encodings() -> tuple[list[str], list[np.ndarray]]:
     """ parse all encodings and returns tuple of (image_names, face_encodings) """
@@ -164,16 +171,29 @@ def parse_all_encodings() -> tuple[list[str], list[np.ndarray]]:
     except Exception as e:
         print(f"Error parsing all encodings: {e}")
 
-if __name__ == "__main__":
-    # Testing 
+def update_credentials(usn: int, **kwargs):
+    student = session.query(Student).filter(Student.usn == usn).first()
     try:
-        # # adding all the people in database
+        for attribute, new_val in kwargs.items():
+            setattr(student, attribute, new_val)
+            session.add(student)
+            session.commit()
+            print("Student credentials were updated successfully!")
+    except Exception as e:
+        print(f"Error in updating: {e}")
+
+
+if __name__ == "__main__":
+    # Testing
+    try:
+        # adding all the people in database
         # create_student(400, "Samarth Sanjay Pyati", "B.Tech CSE", 2023, 0, "F", "Male", "400.jpg")
         # create_student(87, "Atharv Bhujannavar", "B.Tech CSE", 2023, 0, "I", "Male", "087.jpeg")
         # create_student(426, "Shashwath Jain H.P", "B.Tech CSE", 2023, 0, "F", "Male", "426.jpeg")
         # create_student(418, "Sharan S Gowda", "B.Tech CSE", 2023, 0, "I", "Male", "418.jpeg")
         # create_student(490, "Sushruth", "B.Tech CSE", 2023, 0, "I", "Male", "490.jpeg")
-        # create_student(48, "Anagha", "B.Tech CSE", 2023, 0, "H", "Female", "048.jpeg")
+        # create_student(540, "Vishnu Bhardhwaj", "B.Tech CSE", 2023, 0, "I", "Male", "540.jpeg")
+        # update_credentials(400, year_join=2023)
         get_all_student()
     except Exception as e:
         print(f"Error occurred during testing: {e}")

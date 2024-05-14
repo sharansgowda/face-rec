@@ -6,7 +6,8 @@ import numpy as np
 import os
 import pytz
 import sys
-import time
+import requests
+from time import perf_counter
 import multiprocessing
 import datetime
 from encoding import DEFAULT_FACE_DIR_PATH
@@ -42,7 +43,7 @@ class FaceRecognition:
 
         return allow_attendance
 
-    allow_attendance: bool = set_allow_attendance(removeTimeConstraints=True)
+    allow_attendance: bool = set_allow_attendance(removeTimeConstraints=False)
 
     @staticmethod
     def face_confidence(face_distance, face_match_threshold: float = 0.6) -> float:
@@ -83,8 +84,8 @@ class FaceRecognition:
             local_time = last_attendance_time.replace(tzinfo=pytz.utc).astimezone(local_timezone)
             last_attendance_time_text = f"Last Attendance Time: {local_time.strftime('%I:%M:%S %p')}"
             cv2.putText(frame, last_attendance_time_text, (10, 90), font, 0.8, (0, 255, 0), 2)
-        # else:
-        #     print(f"Student with USN {usn} not found in the database.")
+
+    
 
     @staticmethod
     def desired_name_format(usn: int) -> str:
@@ -112,6 +113,30 @@ class FaceRecognition:
             # Draw a label with a name below the face
             cv2.rectangle(frame, (left, bottom - 35), (right, bottom), frame_color, cv2.FILLED)
             cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.7, (255, 255, 255), 1)
+    
+    @staticmethod
+    def get_available_cameras():
+        """ Get all the indicies of available cameras """
+        available_cameras = []
+        for i in range(10):
+            cap = cv2.VideoCapture(i)
+            if cap.isOpened():
+                available_cameras.append(i)
+                cap.release()
+        
+        if available_cameras:
+            print("Available Cameras:", available_cameras)
+        else:
+            print("No cameras found.")
+        return available_cameras
+
+    @staticmethod
+    def phone_camera_feed(_ip_webcam_url: str = 'https://100.77.184.63:8080') -> cv2.typing.MatLike:
+        _ip_webcam_url += '/shot.jpg'
+        res = requests.get(_ip_webcam_url)
+        imgArr = np.array(bytearray(res.content), dtype=np.uint8)
+        img = cv2.imdecode(imgArr, -1)
+        return img
             
     def run_recognition(self) -> cv2.typing.MatLike:
         video_capture = cv2.VideoCapture(0)
@@ -121,7 +146,7 @@ class FaceRecognition:
 
         # Initialize FPS variables
         vidFps = 0
-        prev_time = time.perf_counter()
+        prev_time = perf_counter()
         frames = 0
 
         # Load all the known encodings and known names from database into a list for comparison
@@ -129,10 +154,11 @@ class FaceRecognition:
 
         while True:
             ret, frame = video_capture.read()
+            # frame = FaceRecognition.phone_camera_feed()                    # Get footage from external device
             frame = cv2.flip(frame, 1)
 
             # Calculate FPS
-            current_time = time.perf_counter()
+            current_time = perf_counter()
             frames += 1
             if current_time - prev_time >= 1:
                 vidFps = frames / (current_time - prev_time)
@@ -192,3 +218,5 @@ class FaceRecognition:
         cv2.destroyAllWindows()
 
 
+if __name__ == "__main__":
+    pass

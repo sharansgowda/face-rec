@@ -39,7 +39,7 @@ class Student(Base):
     last_attendance_time = Column("last attendance time", DateTime, nullable=False, default=datetime.datetime.utcnow())
 
     def __repr__(self) -> str:
-        return f"{self.usn}, {self.name}, {self.course} {self.year_join}, Section {self.section}"
+        return f"{self.usn:03d}, {self.name}, {self.course} {self.year_join}, Section {self.section}"
 
 
 engine = create_engine("sqlite:///database.db", echo=False)
@@ -62,20 +62,21 @@ def get_face_image(face_image_name: str, file_path: Path | str = DEFAULT_FACE_DI
         print(f"Fetch image error: {e}")
 
 
-def create_student(usn: int, name: str, course: str, year_join: int, section: str, gender: str, image_name: str) -> None:
+def create_student(usn: int, name: str, course: str, year_join: int, section: str, gender: str, fp: Path | str) -> None:
     try:
-        # get the face image
-        face_image = get_face_image(image_name)
-        face_encodings = get_face_encodings(image_name)
+        path, im_name = os.path.split(fp)
+
+        face_image = get_face_image(im_name, path)
+        face_encodings = get_face_encodings(im_name, path)
 
         if face_image is None:
-            print(f"Image file '{image_name}' not found. Skipping student creation.")
+            print(f"Image file '{name}' not found. Skipping student creation.")
             return
 
         # Check if the student already exists in the database
         existing_student = session.query(Student).filter(Student.usn == usn).first()
         if existing_student:
-            print(f"Student with name {usn} already exists in the database.")
+            print(f"Student with name {name} & usn {usn} already exists in the database.")
             return
 
         # Create a new student object
@@ -206,7 +207,7 @@ if __name__ == "__main__":
         # create_student(418, "Sharan S Gowda", "B.Tech CSE", 2023, "I", "Male", "418.jpeg")
         # create_student(490, "Sushruth", "B.Tech CSE", 2023, "I", "Male", "490.jpeg")
         # create_student(540, "Vishnu Bhardhwaj", "B.Tech CSE", 2023, "I", "Male", "540.jpeg")
-        # create_student(18, "Akhil Dayanand", "BBA Law", 2023, "A", "Male", "018.jpeg")
+        # create_student(18, "Akhil Dayanand", "BBA Law", 2023, "A", "Male", "faces/018.jpeg")
         # update_credentials(400, year_join=2023)
         # delete_student(18)
         get_all_student()

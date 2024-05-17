@@ -6,6 +6,6 @@ if __name__ == "__main__":
     fr = FaceRecognition()
     fr.run_recognition()
     toc = perf_counter()
-    
-    print(f"Total Execution Time: {toc - tic:.2f} second(s)")
-    
+
+    elapsed = toc - tic
+    print(f"Total Execution Time: {elapsed:.2f} second(s)")

@@ -1,8 +1,8 @@
-# Face Recognition, OCR, and Image Processing
+# iDetect
 
 ## Introduction
 
-This project combines the power of Face Recognition, Optical Character Recognition (OCR), and Image Processing to provide a versatile and robust solution for various applications. Whether you're interested in identifying faces, extracting text from images, or performing advanced image manipulations, this project has you covered.
+This project combines the power of Face Recognition and Image Processing to provide a versatile and robust solution for various applications. Whether you're interested in identifying faces, extracting text from images, or performing advanced image manipulations, this project has you covered.
 
 ## Getting Started
 
@@ -13,11 +13,17 @@ To set up the project, follow these simple steps:
    pip3 install -r requirements.txt
    ```
 
-2. Run the Application:
+2. Run the the gui Application:
+    ```bash
+   python3 gui.py
+   ```
+   <i>OR</i>
+
+   Run the face recognition module only
    ```bash
    python3 main.py
    ```
-3. Quit: Press <b>`Q`</b>
+3. Quit Face Recognition: Press <b>`Q`</b>
 
 
 <!-- ## Features

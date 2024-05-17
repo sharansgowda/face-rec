@@ -7,11 +7,21 @@ import os
 import pytz
 import sys
 import requests
-from time import perf_counter
+from time import perf_counter, sleep
+from pyfirmata import Arduino
 import multiprocessing
 import datetime
 from encoding import DEFAULT_FACE_DIR_PATH
 from database import parse_all_encodings, session, Student, get_name_from_usn
+
+try:
+    ''' Connect with the arduino '''
+    board = Arduino("/dev/tty.usbmodem1301")
+    if board:
+        print("Arduino connected.")
+except Exception as e:
+    print("Error (Arduino) : Failed to connect ..")
+
 
 class FaceRecognition:
     face_locations = []
@@ -43,7 +53,7 @@ class FaceRecognition:
 
         return allow_attendance
 
-    allow_attendance: bool = set_allow_attendance(removeTimeConstraints=False)
+    allow_attendance: bool = set_allow_attendance(removeTimeConstraints=True)
 
     @staticmethod
     def face_confidence(face_distance, face_match_threshold: float = 0.6) -> float:
@@ -85,15 +95,13 @@ class FaceRecognition:
             last_attendance_time_text = f"Last Attendance Time: {local_time.strftime('%I:%M:%S %p')}"
             cv2.putText(frame, last_attendance_time_text, (10, 90), font, 0.8, (0, 255, 0), 2)
 
-    
-
     @staticmethod
     def desired_name_format(usn: int) -> str:
         """ Return upper() of first name only so that it can fix in bbox """
         name: str = get_name_from_usn(usn)
         name = name.split(' ')[0]
         return f"{name.upper()} (1RVU23CSE{usn})"
-    
+
     def _draw_face_bbox(self, frame: cv2.typing.MatLike) -> None:
         """ Draw a bounding box around the face of the person with their name on it """
         for (top, right, bottom, left), name in zip(self.face_locations, self.face_names):
@@ -102,7 +110,7 @@ class FaceRecognition:
             right *= 4
             bottom *= 4
             left *= 4
-            
+
             # yellow frame color
             frame_color: tuple = (0, 191, 255)
             font = cv2.FONT_HERSHEY_DUPLEX
@@ -113,7 +121,7 @@ class FaceRecognition:
             # Draw a label with a name below the face
             cv2.rectangle(frame, (left, bottom - 35), (right, bottom), frame_color, cv2.FILLED)
             cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.7, (255, 255, 255), 1)
-    
+
     @staticmethod
     def get_available_cameras():
         """ Get all the indicies of available cameras """
@@ -123,7 +131,7 @@ class FaceRecognition:
             if cap.isOpened():
                 available_cameras.append(i)
                 cap.release()
-        
+
         if available_cameras:
             print("Available Cameras:", available_cameras)
         else:
@@ -137,7 +145,13 @@ class FaceRecognition:
         imgArr = np.array(bytearray(res.content), dtype=np.uint8)
         img = cv2.imdecode(imgArr, -1)
         return img
-            
+
+    @staticmethod
+    def play_buzzer():
+        board.digital[13].write(1)
+        sleep(0.5)
+        board.digital[13].write(0)
+
     def run_recognition(self) -> cv2.typing.MatLike:
         video_capture = cv2.VideoCapture(0)
 
@@ -165,7 +179,6 @@ class FaceRecognition:
                 prev_time = current_time
                 frames = 0
 
-
             if self.PROCESS_CURRENT_FRAME:
                 # resize the frame to 1/4 size to save computation power
                 small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA)
@@ -178,11 +191,11 @@ class FaceRecognition:
                 self.face_names = []
 
                 usn: int = -1
-                confidence: float = 0.0            
+                confidence: float = 0.0
 
                 for face_encoding in self.face_encodings:
-                    matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding)
-                    
+                    matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding, tolerance=0.5)
+
                     # lower the face distance, better the match
                     face_distances = face_recognition.face_distance(self.known_face_encodings, face_encoding)
                     # get index of lowest face distance
@@ -196,6 +209,8 @@ class FaceRecognition:
                         if FaceRecognition.allow_attendance and (usn not in self.last_recognized_usn) and (confidence > self.MIN_CONFIDENCE_THRESHOLD):
                             self.update_attendance(usn)
                             self.last_recognized_usn.append(usn)
+                            # draw frame if confidence > THRESHOLD
+                            # self._draw_face_bbox(frame)
 
                     self.face_names.append(self.desired_name_format(usn))
 
@@ -203,17 +218,21 @@ class FaceRecognition:
             self.PROCESS_CURRENT_FRAME = not self.PROCESS_CURRENT_FRAME
 
             self._draw_face_bbox(frame)
-            
+
             # Draw attendance information for person in the current frame
             FaceRecognition.annotate_info(frame, usn)
-            
+
             # Annotate FPS
             cv2.putText(frame, "FPS: {:.2f}".format(vidFps), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2, cv2.LINE_AA)
 
-            cv2.imshow("FACE RECOGNITION", frame)
+            try:
+                cv2.imshow("FACE RECOGNITION", frame)
+            except cv2.error as e:
+                print("Encountered cv2.error ")
+                continue
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-        
+
         video_capture.release()
         cv2.destroyAllWindows()
 

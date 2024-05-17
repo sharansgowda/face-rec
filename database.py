@@ -103,7 +103,7 @@ def create_student(usn: int, name: str, course: str, year_join: int, section: st
         print(f"Error creating student: {e}")
 
 
-def get_all_student() -> None:
+def print_all_student() -> None:
     try:
         with session:
             result = session.query(Student).all()
@@ -114,6 +114,11 @@ def get_all_student() -> None:
                 print("No data")
     except Exception as e:
         print(f"Error fetching all students: {e}")
+
+
+def get_all_student():
+    students = session.query(Student).all()
+    return students
 
 
 def view_face(usn: int) -> None:
@@ -172,6 +177,7 @@ def parse_all_encodings() -> tuple[list[str], list[np.ndarray]]:
     except Exception as e:
         print(f"Error parsing all encodings: {e}")
 
+
 def update_credentials(usn: int, **kwargs):
     ''' Given the key value pairs of values, the credentials are updated '''
     student = session.query(Student).filter(Student.usn == usn).first()
@@ -183,7 +189,8 @@ def update_credentials(usn: int, **kwargs):
             print("Student credentials were updated successfully!")
     except Exception as e:
         print(f"Error in updating: {e}")
-        
+
+
 def delete_student(usn: int):
     student = session.query(Student).filter(Student.usn == usn).first()
     try:
@@ -195,21 +202,21 @@ def delete_student(usn: int):
             print(f"No student with usn {usn} found in database.")
     except Exception as r:
         print(f"Error in deletion: {e}")
-        
+
 
 if __name__ == "__main__":
     # Testing
     try:
         # adding all the people in database
-        # create_student(400, "Samarth Sanjay Pyati", "B.Tech CSE", 2023, "F", "Male", "400.jpg")
-        # create_student(87, "Atharv Bhujannavar", "B.Tech CSE", 2023, "I", "Male", "087.jpeg")
-        # create_student(426, "Shashwath Jain H.P", "B.Tech CSE", 2023, "F", "Male", "426.jpeg")
-        # create_student(418, "Sharan S Gowda", "B.Tech CSE", 2023, "I", "Male", "418.jpeg")
-        # create_student(490, "Sushruth", "B.Tech CSE", 2023, "I", "Male", "490.jpeg")
-        # create_student(540, "Vishnu Bhardhwaj", "B.Tech CSE", 2023, "I", "Male", "540.jpeg")
-        # create_student(18, "Akhil Dayanand", "BBA Law", 2023, "A", "Male", "faces/018.jpeg")
+        create_student(400, "Samarth Sanjay Pyati", "B.Tech CSE", 2023, "F", "Male", "faces/400.jpg")
+        create_student(87, "Atharv Bhujannavar", "B.Tech CSE", 2023, "I", "Male", "faces/087.jpeg")
+        create_student(426, "Shashwath Jain H.P", "B.Tech CSE", 2023, "F", "Male", "faces/426.jpeg")
+        create_student(418, "Sharan S Gowda", "B.Tech CSE", 2023, "I", "Male", "faces/418.jpeg")
+        create_student(490, "Sushruth", "B.Tech CSE", 2023, "I", "Male", "faces/490.jpeg")
+        create_student(540, "Vishnu Bhardhwaj", "B.Tech CSE", 2023, "I", "Male", "faces/540.jpeg")
+        create_student(18, "Akhil Dayanand", "BBA Law", 2023, "A", "Male", "faces/018.jpeg")
         # update_credentials(400, year_join=2023)
         # delete_student(18)
-        get_all_student()
+        print_all_student()
     except Exception as e:
         print(f"Error occurred during testing: {e}")

@@ -3,5 +3,5 @@ __pycache__/
 assets/
 database.db
 learning/
-venv/
 models/
+venv/

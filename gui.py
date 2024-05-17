@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter.ttk import Treeview
 from PIL import ImageTk, Image
 from pathlib import Path
-from database import create_student, delete_student, get_name_from_usn, update_credentials, get_all_student
+from database import create_student, delete_student, get_name_from_usn, update_credentials, get_all_student, get_student, return_tk_image
 from faceRecUtils import FaceRecognition
 from time import sleep
 from prettytable import PrettyTable
@@ -35,6 +35,9 @@ class WebcamApp:
 
         self.update_student_button = Button(self.window, text="Update Student", font=self.defaultFont, command=self.update_student, cursor="hand", fg=DEFAULT_FG, bg=DEFAULT_BG, width=DEF_BUTTON_WIDTH)
         self.update_student_button.pack()
+
+        self.view_student_details = Button(self.window, text="View Student Detail", font=self.defaultFont, command=self.view_student_detail, cursor="hand", fg=DEFAULT_FG, bg=DEFAULT_BG, width=DEF_BUTTON_WIDTH)
+        self.view_student_details.pack()
 
         self.delete_student_button = Button(self.window, text="Delete Student", font=self.defaultFont, command=self.delete_student, cursor="hand", fg=DEFAULT_FG, bg=DEFAULT_BG, width=DEF_BUTTON_WIDTH)
         self.delete_student_button.pack()
@@ -179,6 +182,87 @@ class WebcamApp:
 
         register_button = Button(register_window, text="Register", command=validate_and_register)
         register_button.grid(row=10, column=0, columnspan=2, padx=10, pady=10)
+
+    def view_student_detail(self):
+        detail_window = Toplevel(self.window)
+        detail_window.title("View Student Detail")
+
+        def set_entry_text(e: tk.Entry, text: str):
+            e.config(state='normal')
+            e.delete(0, tk.END)
+            e.insert(0, text)
+            e.config(state='readonly')
+
+        def clear_errors():
+            error_label.config(text="")
+
+        def search_student():
+            clear_errors()
+            usn = usn_entry.get()
+            if not usn:
+                error_label.config(text="USN not entered.")
+                return
+
+            try:
+                usn = int(usn)
+            except ValueError:
+                error_label.config(text="Enter a valid USN.")
+                return
+
+            try:
+                student = get_student(usn)
+                if student:
+                    set_entry_text(name_entry, student.name)
+                    set_entry_text(course_entry, student.course)
+                    set_entry_text(year_join_entry, student.year_join)
+                    set_entry_text(section_entry, student.section)
+                    set_entry_text(gender_entry, student.gender)
+                    # show the image
+                    image_label.config(image=return_tk_image(usn, 0.2))
+                else:
+                    error_label.config(text="No student found with this USN.")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to retrieve student details: {e}")
+
+        usn_label = Label(detail_window, text="USN: ")
+        usn_label.grid(row=0, column=0, padx=10, pady=10)
+        usn_entry = Entry(detail_window)
+        usn_entry.grid(row=0, column=1, padx=10, pady=10)
+        usn_entry.focus()
+
+        name_label = Label(detail_window, text="Name:")
+        name_label.grid(row=1, column=0, padx=10, pady=10)
+        name_entry = Entry(detail_window, state='readonly')
+        name_entry.grid(row=1, column=1, padx=10, pady=10)
+
+        course_label = Label(detail_window, text="Course:")
+        course_label.grid(row=2, column=0, padx=10, pady=10)
+        course_entry = Entry(detail_window, state='readonly')
+        course_entry.grid(row=2, column=1, padx=10, pady=10)
+
+        year_join_label = Label(detail_window, text="Year of Joining:")
+        year_join_label.grid(row=3, column=0, padx=10, pady=10)
+        year_join_entry = Entry(detail_window, state='readonly')
+        year_join_entry.grid(row=3, column=1, padx=10, pady=10)
+
+        section_label = Label(detail_window, text="Section:")
+        section_label.grid(row=4, column=0, padx=10, pady=10)
+        section_entry = Entry(detail_window, state='readonly')
+        section_entry.grid(row=4, column=1, padx=10, pady=10)
+
+        gender_label = Label(detail_window, text="Gender:")
+        gender_label.grid(row=5, column=0, padx=10, pady=10)
+        gender_entry = Entry(detail_window, state='readonly')
+        gender_entry.grid(row=5, column=1, padx=10, pady=10)
+
+        error_label = Label(detail_window, text="", font=("Source Code Pro", 14), fg="red")
+        error_label.grid(row=6, column=0, columnspan=2, sticky='ew', padx=10, pady=10)
+
+        image_label = Label(detail_window)
+        image_label.grid(row=3, column=2, columnspan=2, padx=10, pady=10)
+
+        search_button = Button(detail_window, text="Search", command=search_student)
+        search_button.grid(row=7, column=0, columnspan=2, padx=10, pady=10)
 
     def delete_student(self):
         delete_window = Toplevel(self.window)

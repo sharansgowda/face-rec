@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pickle
 import datetime
-from PIL import Image
+from PIL import Image, ImageTk
 from io import BytesIO
 import numpy as np
 from sqlalchemy import (
@@ -121,6 +121,17 @@ def get_all_student():
     return students
 
 
+def get_student(usn: int):
+    try:
+        student = session.query(Student).filter(Student.usn == usn).first()
+        if not student:
+            print(f"No student with usn {usn} found.")
+            return
+        return student
+    except Exception as e:
+        print(f"Error fetching details: {e}")
+
+
 def view_face(usn: int) -> None:
     try:
         student = session.query(Student).filter(Student.usn == usn).first()
@@ -133,6 +144,22 @@ def view_face(usn: int) -> None:
         print(f"Image file not found: {e}")
     except Exception as e:
         print(f"Error viewing face: {e}")
+
+
+def return_tk_image(usn: int, scale: float = 0.3):
+    try:
+        student = session.query(Student).filter(Student.usn == usn).first()
+        if student:
+            student_image = Image.open(BytesIO(student.face_image))
+            w, h = student_image.size
+            size_scaled = (int(w * scale), int(h * scale))
+            student_image = student_image.resize(size_scaled, Image.Resampling.LANCZOS)
+            tk_image = ImageTk.PhotoImage(student_image)
+            return tk_image
+    except FileNotFoundError as e:
+        print(f"Image file not found: {e}")
+    except Exception as e:
+        print(f"Error fetching image: {e}")
 
 
 def parse_encoding(usn: int) -> tuple[str, np.ndarray]:
@@ -208,13 +235,13 @@ if __name__ == "__main__":
     # Testing
     try:
         # adding all the people in database
-        create_student(400, "Samarth Sanjay Pyati", "B.Tech CSE", 2023, "F", "Male", "faces/400.jpg")
-        create_student(87, "Atharv Bhujannavar", "B.Tech CSE", 2023, "I", "Male", "faces/087.jpeg")
-        create_student(426, "Shashwath Jain H.P", "B.Tech CSE", 2023, "F", "Male", "faces/426.jpeg")
-        create_student(418, "Sharan S Gowda", "B.Tech CSE", 2023, "I", "Male", "faces/418.jpeg")
-        create_student(490, "Sushruth", "B.Tech CSE", 2023, "I", "Male", "faces/490.jpeg")
-        create_student(540, "Vishnu Bhardhwaj", "B.Tech CSE", 2023, "I", "Male", "faces/540.jpeg")
-        create_student(18, "Akhil Dayanand", "BBA Law", 2023, "A", "Male", "faces/018.jpeg")
+        # create_student(400, "Samarth Sanjay Pyati", "B.Tech CSE", 2023, "F", "Male", "faces/400.jpg")
+        # create_student(87, "Atharv Bhujannavar", "B.Tech CSE", 2023, "I", "Male", "faces/087.jpeg")
+        # create_student(426, "Shashwath Jain H.P", "B.Tech CSE", 2023, "F", "Male", "faces/426.jpeg")
+        # create_student(418, "Sharan S Gowda", "B.Tech CSE", 2023, "I", "Male", "faces/418.jpeg")
+        # create_student(490, "Sushruth", "B.Tech CSE", 2023, "I", "Male", "faces/490.jpeg")
+        # create_student(540, "Vishnu Bhardhwaj", "B.Tech CSE", 2023, "I", "Male", "faces/540.jpeg")
+        # create_student(18, "Akhil Dayanand", "BBA Law", 2023, "A", "Male", "faces/018.jpeg")
         # update_credentials(400, year_join=2023)
         # delete_student(18)
         print_all_student()

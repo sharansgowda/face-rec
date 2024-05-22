@@ -1,4 +1,4 @@
-# iDetect
+# iDetect - Facial Recognition Attendance System
 
 ## Introduction
 
@@ -19,38 +19,8 @@ To set up the project, follow these simple steps:
    ```
    <i>OR</i>
 
-   Run the face recognition module only
+   Run the bare face recognition module
    ```bash
    python3 main.py
    ```
 3. Quit Face Recognition: Press <b>`Q`</b>
-
-
-<!-- ## Features
-
-### 1. Face Recognition
-
-The Face Recognition module allows you to identify and analyze faces in images. Whether you're building a security system or creating fun applications, this feature provides a foundation for various face-related tasks.
-
-### 2. Optical Character Recognition (OCR)
-
-Unlock the potential of extracting text from images with the OCR module. From digitizing documents to automating data entry, this feature can be a game-changer for applications requiring text recognition.
-
-### 3. Image Processing
-
-The Image Processing capabilities of this project open up a world of creative possibilities. Apply filters, enhance colors, or manipulate images to suit your needs. The intuitive interface makes it easy to experiment and achieve the desired visual effects.
-
-## Usage
-
-1. **Face Recognition:**
-   - Simply provide an image containing faces, and the system will identify and analyze them.
-   - Explore additional features like emotion detection, age estimation, and gender classification for a comprehensive analysis.
-
-2. **OCR:**
-   - Supply an image with text, and the OCR module will extract and present the text data.
-   - Utilize this feature for document scanning, automating data entry, or extracting information from images.
-
-3. **Image Processing:**
-   - Experiment with various filters, color adjustments, and transformations to enhance or stylize images.
-   - Intuitive controls make it easy to visualize and apply changes in real-time.
- -->

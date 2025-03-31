@@ -1,6 +1,6 @@
-from tkinter import Toplevel, Label, Entry, Button, filedialog, Tk, OptionMenu, messagebox
+from tkinter import Toplevel, Label, Entry, Button, filedialog, Tk, OptionMenu, messagebox, Frame
 import tkinter as tk
-from tkinter.ttk import Treeview
+from tkinter.ttk import Treeview, Style
 from PIL import ImageTk, Image
 from pathlib import Path
 from database import create_student, delete_student, get_name_from_usn, update_credentials, get_all_student, get_student, return_tk_image
@@ -17,54 +17,202 @@ class WebcamApp:
         self.window.geometry('1600x900')
         self.window.bind('<Escape>', lambda x: window.quit())
         self.window.title(window_title)
-
-        DEFAULT_BG = "#FFFAE6"
-        DEFAULT_FG = "#240750"
-        DEF_BUTTON_WIDTH = 30
-        self.defaultFont = ("Source Code Pro", 18)
-
-        self.project_title = Label(self.window, text="iDetect", justify='center', font=('Source Code Pro', 40), relief="ridge", bg=DEFAULT_BG, fg=DEFAULT_FG)
-        self.project_title.pack(fill='both')
-
-        self.button = Button(self.window, text="Take Attendance", font=self.defaultFont, command=fr.run_recognition, cursor="hand",
-                             underline=True, fg=DEFAULT_FG, bg=DEFAULT_BG, width=DEF_BUTTON_WIDTH)
-        self.button.pack(padx=20, pady=20)
-
-        self.register_student_button = Button(self.window, text="Register Student", font=self.defaultFont, command=self.register_student, cursor="hand", fg=DEFAULT_FG, bg=DEFAULT_BG, width=DEF_BUTTON_WIDTH)
-        self.register_student_button.pack()
-
-        self.update_student_button = Button(self.window, text="Update Student", font=self.defaultFont, command=self.update_student, cursor="hand", fg=DEFAULT_FG, bg=DEFAULT_BG, width=DEF_BUTTON_WIDTH)
-        self.update_student_button.pack()
-
-        self.view_student_details = Button(self.window, text="View Student Detail", font=self.defaultFont, command=self.view_student_detail, cursor="hand", fg=DEFAULT_FG, bg=DEFAULT_BG, width=DEF_BUTTON_WIDTH)
-        self.view_student_details.pack()
-
-        self.delete_student_button = Button(self.window, text="Delete Student", font=self.defaultFont, command=self.delete_student, cursor="hand", fg=DEFAULT_FG, bg=DEFAULT_BG, width=DEF_BUTTON_WIDTH)
-        self.delete_student_button.pack()
-
-        self.view_database_button = Button(self.window, text="View Database", font=self.defaultFont, command=self.view_database, cursor="hand", fg=DEFAULT_FG, bg=DEFAULT_BG, width=DEF_BUTTON_WIDTH)
-        self.view_database_button.pack()
-
-        # self.buzzer_button = tk.Button(self.window, text="SHAMPAL", font=self.defaultFont, command=self.play_buzzer, cursor="hand")
-        # self.buzzer_button.pack(anchor=tk.CENTER, fill=tk.BOTH, side=tk.BOTTOM)
-
+        
+        # Define color scheme
+        self.PRIMARY_COLOR = "#4A6FDC"        # Main blue
+        self.SECONDARY_COLOR = "#1B2845"      # Dark blue
+        self.ACCENT_COLOR = "#FF6B6B"         # Accent red
+        self.BG_COLOR = "#ECDFCC"             # Light background
+        self.TEXT_COLOR = "#333333"           # Dark text
+        self.HIGHLIGHT_COLOR = "#82C0CC"      # Highlight color
+        
+        # Define fonts
+        self.TITLE_FONT = ("Helvetica", 42, "bold")
+        self.HEADER_FONT = ("Helvetica", 24)
+        self.BUTTON_FONT = ("Helvetica", 16)
+        self.TEXT_FONT = ("Helvetica", 14)
+        
+        # Configure window
+        self.window.configure(bg=self.BG_COLOR)
+        
+        # Create main frames
+        self.header_frame = Frame(self.window, bg=self.SECONDARY_COLOR, height=100)
+        self.header_frame.pack(fill='x')
+        
+        self.content_frame = Frame(self.window, bg=self.BG_COLOR)
+        self.content_frame.pack(fill='both', expand=True, padx=30, pady=30)
+        
+        # Create title
+        self.project_title = Label(
+            self.header_frame, 
+            text="iDetect", 
+            font=self.TITLE_FONT, 
+            bg=self.SECONDARY_COLOR, 
+            fg="white",
+            pady=20
+        )
+        self.project_title.pack()
+        
+        # Create subtitle
+        self.subtitle = Label(
+            self.content_frame,
+            text="Facial Recognition Attendance System",
+            font=self.HEADER_FONT,
+            bg=self.BG_COLOR,
+            fg=self.TEXT_COLOR,
+            pady=10
+        )
+        self.subtitle.pack()
+        
+        # Create button frame
+        self.button_frame = Frame(self.content_frame, bg=self.BG_COLOR)
+        self.button_frame.pack(pady=30)
+        
+        # Create buttons
+        button_configs = [
+            ("Take Attendance", fr.run_recognition, "📸"),
+            ("Register Student", self.register_student, "👤"),
+            ("Update Student", self.update_student, "✏️"),
+            ("View Student Detail", self.view_student_detail, "🔍"),
+            ("Delete Student", self.delete_student, "🗑️"),
+            ("View Database", self.view_database, "📊")
+        ]
+        
+        for i, (text, command, icon) in enumerate(button_configs):
+            button = self.create_styled_button(
+                self.button_frame, 
+                f"{icon} {text}", 
+                command
+            )
+            row, col = divmod(i, 2)
+            button.grid(row=row, column=col, padx=20, pady=15)
+        
+        # Create footer
+        self.footer = Label(
+            self.window,
+            text="© 2025 iDetect - Facial Recognition Attendance System",
+            font=("Helvetica", 10),
+            bg=self.SECONDARY_COLOR,
+            fg="white",
+            pady=10
+        )
+        self.footer.pack(side="bottom", fill="x")
+        
         self.window.mainloop()
-
-    # def play_buzzer(self):
-    #     self.board.digital[13].write(1)
-    #     sleep(1)
-    #     self.board.digital[13].write(0)
+    
+    def create_styled_button(self, parent, text, command):
+        """Create a styled button with hover effects"""
+        button = Button(
+            parent,
+            text=text,
+            font=self.BUTTON_FONT,
+            command=command,
+            cursor="hand2",
+            bg=self.PRIMARY_COLOR,
+            fg="black",
+            width=25,
+            height=2,
+            relief="flat",
+            borderwidth=0
+        )
+        
+        # Add hover effects
+        button.bind("<Enter>", lambda e, b=button: self.on_button_hover(b))
+        button.bind("<Leave>", lambda e, b=button: self.on_button_leave(b))
+        
+        return button
+    
+    def on_button_hover(self, button):
+        button.config(bg=self.HIGHLIGHT_COLOR)
+    
+    def on_button_leave(self, button):
+        button.config(bg=self.PRIMARY_COLOR)
+    
+    def create_form_window(self, title):
+        """Create a standardized form window"""
+        form_window = Toplevel(self.window)
+        form_window.title(title)
+        form_window.configure(bg=self.BG_COLOR)
+        form_window.geometry("800x600")
+        
+        # Add header
+        header = Label(
+            form_window,
+            text=title,
+            font=self.HEADER_FONT,
+            bg=self.SECONDARY_COLOR,
+            fg="white",
+            pady=10
+        )
+        header.pack(fill="x")
+        
+        content_frame = Frame(form_window, bg=self.BG_COLOR, padx=20, pady=20)
+        content_frame.pack(fill="both", expand=True)
+        
+        return form_window, content_frame
+    
+    def create_form_field(self, parent, row, label_text, entry_width=30, readonly=False):
+        """Create a standardized form field with label and entry"""
+        label = Label(
+            parent, 
+            text=label_text, 
+            font=self.TEXT_FONT, 
+            bg=self.BG_COLOR, 
+            fg=self.TEXT_COLOR,
+            anchor="e",
+            width=15
+        )
+        label.grid(row=row, column=0, padx=10, pady=10, sticky="e")
+        
+        entry = Entry(
+            parent,
+            font=self.TEXT_FONT,
+            width=entry_width,
+            bd=2,
+            relief="groove"
+        )
+        
+        if readonly:
+            entry.config(state='readonly', readonlybackground="#ECECEC")
+            
+        entry.grid(row=row, column=1, padx=10, pady=10, sticky="w")
+        
+        return label, entry
+    
+    def create_form_button(self, parent, text, command, row, col, columnspan=2):
+        """Create a standardized form button"""
+        button = Button(
+            parent,
+            text=text,
+            font=self.TEXT_FONT,
+            command=command,
+            cursor="hand2",
+            bg=self.PRIMARY_COLOR,
+            fg="white",
+            width=15,
+            relief="flat",
+            borderwidth=0
+        )
+        
+        button.grid(row=row, column=col, columnspan=columnspan, padx=10, pady=20)
+        
+        # Add hover effects
+        button.bind("<Enter>", lambda e, b=button: self.on_button_hover(b))
+        button.bind("<Leave>", lambda e, b=button: self.on_button_leave(b))
+        
+        return button
 
     def register_student(self):
-        register_window = Toplevel(self.window)
-        register_window.title("Register Student")
-
+        form_window, form_frame = self.create_form_window("Register Student")
+        
         def select_image() -> Path:
-            file_path = filedialog.askopenfilename()
+            file_path = filedialog.askopenfilename(
+                filetypes=[("Image Files", "*.jpg *.jpeg *.png")]
+            )
             SCALE: float = 0.2
             if file_path:
                 image = Image.open(file_path)
-                _image = image.resize((int(image.height * SCALE), int(image.width * SCALE)), resample=Image.Resampling.LANCZOS)
+                _image = image.resize((int(image.width * SCALE), int(image.height * SCALE)), resample=Image.Resampling.LANCZOS)
                 photo = ImageTk.PhotoImage(_image)
                 image_label.config(image=photo)
                 image_label.image = photo               # Keep reference to prevent garbage collection
@@ -79,7 +227,7 @@ class WebcamApp:
             gender = gender_var.get()
 
             # Clear previous error messages
-            clear_errors()
+            error_label.config(text="")
 
             # Validate fields
             if not name:
@@ -126,67 +274,62 @@ class WebcamApp:
                 # Show success message
                 messagebox.showinfo("Success", "Student registered successfully!")
                 # Close the register window
-                register_window.destroy()
+                form_window.destroy()
             except Exception as e:
                 # Show error message if registration fails
                 messagebox.showerror("Error", f"Failed to register student: {e}")
 
-        def clear_errors():
-            error_label.config(text="")
-
-        name_label = Label(register_window, text="Name:")
-        name_label.grid(row=0, column=0, padx=10, pady=10)
-        name_entry = Entry(register_window)
-        name_entry.grid(row=0, column=1, padx=10, pady=10)
-
-        usn_label = Label(register_window, text="USN:")
-        usn_label.grid(row=1, column=0, padx=10, pady=10)
-        usn_entry = Entry(register_window)
-        usn_entry.grid(row=1, column=1, padx=10, pady=10)
-
-        course_label = Label(register_window, text="Course:")
-        course_label.grid(row=2, column=0, padx=10, pady=10)
-        course_entry = Entry(register_window)
-        course_entry.grid(row=2, column=1, padx=10, pady=10)
-
-        year_join_label = Label(register_window, text="Year of Joining:")
-        year_join_label.grid(row=3, column=0, padx=10, pady=10)
-        year_join_entry = Entry(register_window)
-        year_join_entry.grid(row=3, column=1, padx=10, pady=10)
-
-        section_label = Label(register_window, text="Section:")
-        section_label.grid(row=4, column=0, padx=10, pady=10)
-        section_entry = Entry(register_window)
-        section_entry.grid(row=4, column=1, padx=10, pady=10)
-
-        gender_label = Label(register_window, text="Gender:")
-        gender_label.grid(row=5, column=0, padx=10, pady=10)
+        # Create fields
+        _, name_entry = self.create_form_field(form_frame, 0, "Name:")
+        _, usn_entry = self.create_form_field(form_frame, 1, "USN:")
+        _, course_entry = self.create_form_field(form_frame, 2, "Course:")
+        _, year_join_entry = self.create_form_field(form_frame, 3, "Year of Joining:")
+        _, section_entry = self.create_form_field(form_frame, 4, "Section:")
+        
+        # Gender dropdown
+        gender_label = Label(form_frame, text="Gender:", font=self.TEXT_FONT, bg=self.BG_COLOR, fg=self.TEXT_COLOR, anchor="e", width=15)
+        gender_label.grid(row=5, column=0, padx=10, pady=10, sticky="e")
+        
         genders = ["Male", "Female", "Others"]
         gender_var = tk.StringVar()
         gender_var.set(genders[0])
-        gender_option = OptionMenu(register_window, gender_var, *genders)
-        gender_option.grid(row=5, column=1, padx=10, pady=10)
-
-        select_image_button = Button(register_window, text="Select Image", command=select_image)
-        select_image_button.grid(row=7, column=0, columnspan=2, padx=10, pady=10)
-
-        image_label = Label(register_window)
-        image_label.grid(row=3, column=2, columnspan=2, padx=10, pady=10)
-
-        # After creating the image_label
-        file_path_label = Label(register_window, text="", font=("Source Code Pro", 12), fg="beige")
-        file_path_label.grid(row=6, column=0, columnspan=2, padx=10, pady=10)
-
-        error_label = Label(register_window, text="", font=("Source Code Pro", 14), fg="red")
-        error_label.grid(row=9, column=0, columnspan=2, sticky='ew', padx=10, pady=10)
-
-        register_button = Button(register_window, text="Register", command=validate_and_register)
-        register_button.grid(row=10, column=0, columnspan=2, padx=10, pady=10)
+        
+        gender_option = OptionMenu(form_frame, gender_var, *genders)
+        gender_option.config(font=self.TEXT_FONT, bg="white", width=10)
+        gender_option.grid(row=5, column=1, padx=10, pady=10, sticky="w")
+        
+        # Image selection
+        select_image_button = Button(
+            form_frame, 
+            text="Select Image", 
+            command=select_image,
+            font=self.TEXT_FONT,
+            bg=self.SECONDARY_COLOR,
+            fg="white",
+            relief="flat"
+        )
+        select_image_button.grid(row=6, column=0, columnspan=2, padx=10, pady=10)
+        
+        # Image preview and file path
+        image_preview_frame = Frame(form_frame, bg=self.BG_COLOR, bd=2, relief="groove", width=300, height=300)
+        image_preview_frame.grid(row=0, column=2, rowspan=6, padx=20, pady=10)
+        
+        image_label = Label(image_preview_frame, bg=self.BG_COLOR)
+        image_label.pack(padx=10, pady=10)
+        
+        file_path_label = Label(form_frame, text="", font=("Helvetica", 10), fg=self.TEXT_COLOR, bg=self.BG_COLOR, wraplength=300)
+        file_path_label.grid(row=6, column=1, columnspan=2, padx=10, pady=10, sticky="w")
+        
+        # Error label
+        error_label = Label(form_frame, text="", font=self.TEXT_FONT, fg=self.ACCENT_COLOR, bg=self.BG_COLOR)
+        error_label.grid(row=7, column=0, columnspan=3, sticky='ew', padx=10, pady=10)
+        
+        # Register button
+        register_button = self.create_form_button(form_frame, "Register", validate_and_register, 8, 0, 3)
 
     def view_student_detail(self):
-        detail_window = Toplevel(self.window)
-        detail_window.title("View Student Detail")
-
+        form_window, form_frame = self.create_form_window("View Student Detail")
+        
         def set_entry_text(e: tk.Entry, text: str):
             e.config(state='normal')
             e.delete(0, tk.END)
@@ -214,85 +357,198 @@ class WebcamApp:
                 if student:
                     set_entry_text(name_entry, student.name)
                     set_entry_text(course_entry, student.course)
-                    set_entry_text(year_join_entry, student.year_join)
+                    set_entry_text(year_join_entry, str(student.year_join))
                     set_entry_text(section_entry, student.section)
                     set_entry_text(gender_entry, student.gender)
+                    set_entry_text(attendance_entry, str(student.attendance))
+                    
                     # show the image
-                    image_label.config(image=return_tk_image(usn, 0.2))
+                    try:
+                        img = return_tk_image(usn, 0.3)
+                        image_label.config(image=img)
+                        image_label.image = img
+                    except Exception as e:
+                        print(f"Error loading image: {e}")
                 else:
                     error_label.config(text="No student found with this USN.")
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to retrieve student details: {e}")
 
-        usn_label = Label(detail_window, text="USN: ")
-        usn_label.grid(row=0, column=0, padx=10, pady=10)
-        usn_entry = Entry(detail_window)
-        usn_entry.grid(row=0, column=1, padx=10, pady=10)
+        # Search field
+        usn_frame = Frame(form_frame, bg=self.BG_COLOR)
+        usn_frame.pack(pady=10)
+        
+        usn_label = Label(usn_frame, text="Enter USN:", font=self.TEXT_FONT, bg=self.BG_COLOR, fg=self.TEXT_COLOR)
+        usn_label.pack(side="left", padx=10)
+        
+        usn_entry = Entry(usn_frame, font=self.TEXT_FONT, width=10)
+        usn_entry.pack(side="left", padx=10)
         usn_entry.focus()
-
-        name_label = Label(detail_window, text="Name:")
-        name_label.grid(row=1, column=0, padx=10, pady=10)
-        name_entry = Entry(detail_window, state='readonly')
-        name_entry.grid(row=1, column=1, padx=10, pady=10)
-
-        course_label = Label(detail_window, text="Course:")
-        course_label.grid(row=2, column=0, padx=10, pady=10)
-        course_entry = Entry(detail_window, state='readonly')
-        course_entry.grid(row=2, column=1, padx=10, pady=10)
-
-        year_join_label = Label(detail_window, text="Year of Joining:")
-        year_join_label.grid(row=3, column=0, padx=10, pady=10)
-        year_join_entry = Entry(detail_window, state='readonly')
-        year_join_entry.grid(row=3, column=1, padx=10, pady=10)
-
-        section_label = Label(detail_window, text="Section:")
-        section_label.grid(row=4, column=0, padx=10, pady=10)
-        section_entry = Entry(detail_window, state='readonly')
-        section_entry.grid(row=4, column=1, padx=10, pady=10)
-
-        gender_label = Label(detail_window, text="Gender:")
-        gender_label.grid(row=5, column=0, padx=10, pady=10)
-        gender_entry = Entry(detail_window, state='readonly')
-        gender_entry.grid(row=5, column=1, padx=10, pady=10)
-
-        error_label = Label(detail_window, text="", font=("Source Code Pro", 14), fg="red")
-        error_label.grid(row=6, column=0, columnspan=2, sticky='ew', padx=10, pady=10)
-
-        image_label = Label(detail_window)
-        image_label.grid(row=3, column=2, columnspan=2, padx=10, pady=10)
-
-        search_button = Button(detail_window, text="Search", command=search_student)
-        search_button.grid(row=7, column=0, columnspan=2, padx=10, pady=10)
+        
+        search_button = Button(
+            usn_frame, 
+            text="Search", 
+            command=search_student,
+            font=self.TEXT_FONT,
+            bg=self.PRIMARY_COLOR,
+            fg="white",
+            relief="flat"
+        )
+        search_button.pack(side="left", padx=10)
+        
+        # Main content
+        content_container = Frame(form_frame, bg=self.BG_COLOR)
+        content_container.pack(fill="both", expand=True, pady=20)
+        
+        # Left frame for details
+        details_frame = Frame(content_container, bg=self.BG_COLOR)
+        details_frame.pack(side="left", padx=20, fill="y")
+        
+        # Create read-only fields
+        _, name_entry = self.create_form_field(details_frame, 0, "Name:", readonly=True)
+        _, course_entry = self.create_form_field(details_frame, 1, "Course:", readonly=True)
+        _, year_join_entry = self.create_form_field(details_frame, 2, "Year of Joining:", readonly=True)
+        _, section_entry = self.create_form_field(details_frame, 3, "Section:", readonly=True)
+        _, gender_entry = self.create_form_field(details_frame, 4, "Gender:", readonly=True)
+        _, attendance_entry = self.create_form_field(details_frame, 5, "Attendance:", readonly=True)
+        
+        # Right frame for image
+        image_frame = Frame(content_container, bg=self.BG_COLOR, bd=2, relief="groove", width=300, height=300)
+        image_frame.pack(side="right", padx=20, fill="both", expand=True)
+        
+        image_label = Label(image_frame, bg=self.BG_COLOR)
+        image_label.pack(padx=10, pady=10, fill="both", expand=True)
+        
+        # Error label
+        error_label = Label(form_frame, text="", font=self.TEXT_FONT, fg=self.ACCENT_COLOR, bg=self.BG_COLOR)
+        error_label.pack(pady=10)
 
     def delete_student(self):
-        delete_window = Toplevel(self.window)
-        delete_window.title("Delete Student")
-
+        form_window, form_frame = self.create_form_window("Delete Student")
+        
         def delete():
             usn = usn_entry.get()
-            if messagebox.askokcancel("Warning", f"Are you sure you want to delete {get_name_from_usn(usn)} with USN {usn}?"):
-                try:
+            if not usn:
+                error_label.config(text="USN not entered.")
+                return
+                
+            try:
+                usn = int(usn)
+            except ValueError:
+                error_label.config(text="Enter a valid USN.")
+                return
+                
+            try:
+                student_name = get_name_from_usn(usn)
+                if not student_name:
+                    error_label.config(text="No student found with this USN.")
+                    return
+                    
+                if messagebox.askokcancel("Warning", f"Are you sure you want to delete {student_name} with USN {usn}?"):
                     # Call the delete_student function
                     delete_student(usn)
                     # Show success message
                     messagebox.showinfo("Success", "Student deleted successfully!")
                     # Close the delete window
-                    delete_window.destroy()
-                except Exception as e:
-                    # Show error message if deletion fails
-                    messagebox.showerror("Error", f"Failed to delete student: {e}")
+                    form_window.destroy()
+            except Exception as e:
+                # Show error message if deletion fails
+                messagebox.showerror("Error", f"Failed to delete student: {e}")
 
-        usn_label = Label(delete_window, text="Enter USN to delete:")
-        usn_label.grid(row=0, column=0, padx=10, pady=10)
-        usn_entry = Entry(delete_window)
-        usn_entry.grid(row=0, column=1, padx=10, pady=10)
-
-        delete_button = Button(delete_window, text="Delete", command=delete)
-        delete_button.grid(row=1, column=0, columnspan=2, padx=10, pady=10)
+        # Create warning frame
+        warning_frame = Frame(form_frame, bg=self.ACCENT_COLOR, bd=2, relief="groove")
+        warning_frame.pack(fill="x", padx=20, pady=20)
+        
+        warning_label = Label(
+            warning_frame,
+            text="⚠️ Warning: This action cannot be undone.",
+            font=self.TEXT_FONT,
+            bg=self.ACCENT_COLOR,
+            fg="white",
+            pady=10
+        )
+        warning_label.pack()
+        
+        # USN frame
+        usn_frame = Frame(form_frame, bg=self.BG_COLOR)
+        usn_frame.pack(pady=30)
+        
+        usn_label = Label(usn_frame, text="Enter USN to delete:", font=self.TEXT_FONT, bg=self.BG_COLOR, fg=self.TEXT_COLOR)
+        usn_label.pack(side="top", pady=10)
+        
+        usn_entry = Entry(usn_frame, font=self.TEXT_FONT, width=15, justify="center")
+        usn_entry.pack(side="top", pady=10)
+        usn_entry.focus()
+        
+        # Error label
+        error_label = Label(form_frame, text="", font=self.TEXT_FONT, fg=self.ACCENT_COLOR, bg=self.BG_COLOR)
+        error_label.pack(pady=10)
+        
+        # Delete button
+        delete_button = Button(
+            form_frame,
+            text="Delete Student",
+            command=delete,
+            font=self.TEXT_FONT,
+            bg=self.ACCENT_COLOR,
+            fg="white",
+            width=15,
+            relief="flat",
+            borderwidth=0
+        )
+        delete_button.pack(pady=20)
 
     def update_student(self):
-        update_window = Toplevel(self.window)
-        update_window.title("Update Student")
+        form_window, form_frame = self.create_form_window("Update Student")
+        
+        def clear_errors():
+            error_label.config(text="")
+            
+        def load_student():
+            clear_errors()
+            usn = usn_entry.get()
+            if not usn:
+                error_label.config(text="USN not entered.")
+                return
+
+            try:
+                usn = int(usn)
+            except ValueError:
+                error_label.config(text="Enter a valid USN.")
+                return
+
+            try:
+                student = get_student(usn)
+                if student:
+                    # Pre-fill the fields with current data
+                    name_entry.delete(0, tk.END)
+                    name_entry.insert(0, student.name)
+                    
+                    course_entry.delete(0, tk.END)
+                    course_entry.insert(0, student.course)
+                    
+                    year_join_entry.delete(0, tk.END)
+                    year_join_entry.insert(0, str(student.year_join))
+                    
+                    section_entry.delete(0, tk.END)
+                    section_entry.insert(0, student.section)
+                    
+                    gender_var.set(student.gender)
+                    
+                    # Show student image
+                    try:
+                        img = return_tk_image(usn, 0.3)
+                        image_label.config(image=img)
+                        image_label.image = img
+                    except Exception as e:
+                        print(f"Error loading image: {e}")
+                        
+                    # Enable update button
+                    update_button.config(state="normal")
+                else:
+                    error_label.config(text="No student found with this USN.")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to retrieve student details: {e}")
 
         def update():
             # Get the USN of the student to be updated
@@ -317,99 +573,177 @@ class WebcamApp:
                 # Show success message
                 messagebox.showinfo("Success", "Student details updated successfully!")
                 # Close the update window
-                update_window.destroy()
+                form_window.destroy()
             except Exception as e:
                 # Show error message if update fails
                 messagebox.showerror("Error", f"Failed to update student details: {e}")
 
-        usn_label = Label(update_window, text="Enter USN to update:")
-        usn_label.grid(row=0, column=0, padx=10, pady=10)
-        usn_entry = Entry(update_window)
-        usn_entry.grid(row=0, column=1, padx=10, pady=10)
-
-        name_label = Label(update_window, text="Name:")
-        name_label.grid(row=1, column=0, padx=10, pady=10)
-        name_entry = Entry(update_window)
-        name_entry.grid(row=1, column=1, padx=10, pady=10)
-
-        course_label = Label(update_window, text="Course:")
-        course_label.grid(row=2, column=0, padx=10, pady=10)
-        course_entry = Entry(update_window)
-        course_entry.grid(row=2, column=1, padx=10, pady=10)
-
-        year_join_label = Label(update_window, text="Year of Joining:")
-        year_join_label.grid(row=3, column=0, padx=10, pady=10)
-        year_join_entry = Entry(update_window)
-        year_join_entry.grid(row=3, column=1, padx=10, pady=10)
-
-        section_label = Label(update_window, text="Section:")
-        section_label.grid(row=4, column=0, padx=10, pady=10)
-        section_entry = Entry(update_window)
-        section_entry.grid(row=4, column=1, padx=10, pady=10)
-
-        gender_label = Label(update_window, text="Gender:")
-        gender_label.grid(row=5, column=0, padx=10, pady=10)
+        # Search frame
+        search_frame = Frame(form_frame, bg=self.BG_COLOR)
+        search_frame.pack(pady=10)
+        
+        usn_label = Label(search_frame, text="Enter USN:", font=self.TEXT_FONT, bg=self.BG_COLOR, fg=self.TEXT_COLOR)
+        usn_label.pack(side="left", padx=10)
+        
+        usn_entry = Entry(search_frame, font=self.TEXT_FONT, width=10)
+        usn_entry.pack(side="left", padx=10)
+        usn_entry.focus()
+        
+        load_button = Button(
+            search_frame, 
+            text="Load Student", 
+            command=load_student,
+            font=self.TEXT_FONT,
+            bg=self.PRIMARY_COLOR,
+            fg="white",
+            relief="flat"
+        )
+        load_button.pack(side="left", padx=10)
+        
+        # Main content
+        content_container = Frame(form_frame, bg=self.BG_COLOR)
+        content_container.pack(fill="both", expand=True, pady=20)
+        
+        # Left frame for details
+        details_frame = Frame(content_container, bg=self.BG_COLOR)
+        details_frame.pack(side="left", padx=20, fill="y")
+        
+        # Create editable fields
+        _, name_entry = self.create_form_field(details_frame, 0, "Name:")
+        _, course_entry = self.create_form_field(details_frame, 1, "Course:")
+        _, year_join_entry = self.create_form_field(details_frame, 2, "Year of Joining:")
+        _, section_entry = self.create_form_field(details_frame, 3, "Section:")
+        
+        # Gender dropdown
+        gender_label = Label(details_frame, text="Gender:", font=self.TEXT_FONT, bg=self.BG_COLOR, fg=self.TEXT_COLOR, anchor="e", width=15)
+        gender_label.grid(row=4, column=0, padx=10, pady=10, sticky="e")
+        
         genders = ["Male", "Female", "Others"]
         gender_var = tk.StringVar()
-        gender_option = OptionMenu(update_window, gender_var, *genders)
-        gender_option.grid(row=5, column=1, padx=10, pady=10)
-
-        update_button = Button(update_window, text="Update", command=update)
-        update_button.grid(row=6, column=0, columnspan=2, padx=10, pady=10)
+        gender_var.set(genders[0])
+        
+        gender_option = OptionMenu(details_frame, gender_var, *genders)
+        gender_option.config(font=self.TEXT_FONT, bg="white", width=10)
+        gender_option.grid(row=4, column=1, padx=10, pady=10, sticky="w")
+        
+        # Right frame for image
+        image_frame = Frame(content_container, bg=self.BG_COLOR, bd=2, relief="groove", width=300, height=300)
+        image_frame.pack(side="right", padx=20, fill="both", expand=True)
+        
+        image_label = Label(image_frame, bg=self.BG_COLOR)
+        image_label.pack(padx=10, pady=10, fill="both", expand=True)
+        
+        # Error label
+        error_label = Label(form_frame, text="", font=self.TEXT_FONT, fg=self.ACCENT_COLOR, bg=self.BG_COLOR)
+        error_label.pack(pady=10)
+        
+        # Update button
+        update_button = Button(
+            form_frame,
+            text="Update Student",
+            command=update,
+            font=self.TEXT_FONT,
+            bg=self.PRIMARY_COLOR,
+            fg="white",
+            width=15,
+            relief="flat",
+            borderwidth=0,
+            state="disabled"  # Initially disabled until student is loaded
+        )
+        update_button.pack(pady=20)
 
     def view_database(self):
-        view_window = Toplevel(self.window)
-        view_window.title("View Database")
-
-        # def show_students():
-        #     try:
-        #         students = get_all_student()
-        #         if students:
-        #             text = ""
-        #             for student in students:
-        #                 text += f"USN: {student.usn:03d}, Name: {student.name}, Course: {student.course}, Year of Joining: {student.year_join}, Section: {student.section}, Gender: {student.gender}\n"
-        #             database_text.config(state="normal")
-        #             database_text.delete("1.0", "end")
-        #             database_text.insert("1.0", text)
-        #             database_text.config(state="disabled")
-        #         else:
-        #             database_text.config(state="normal")
-        #             database_text.delete("1.0", "end")
-        #             database_text.insert("1.0", "No data found")
-        #             database_text.config(state="disabled")
-        #     except Exception as e:
-        #         messagebox.showerror("Error", f"Failed to fetch database: {e}")
-
+        view_window, content_frame = self.create_form_window("Student Database")
+        view_window.geometry("1200x700")  # Make this window larger
+        
         def show_students():
             try:
                 students = get_all_student()
                 if students:
-                    table = PrettyTable()
-                    table.field_names = ["USN", "Name", "Course", "Year of Joining", "Section", "Gender", "Attendance", "Last attendance time"]
+                    # Clear the treeview
+                    for item in tree.get_children():
+                        tree.delete(item)
+                        
+                    # Add data to treeview
                     for student in students:
-                        table.add_row([student.usn, student.name, student.course, student.year_join, student.section, student.gender, student.attendance, student.last_attendance_time])
-                    text = table.get_string()
-                    database_text.config(state="normal")
-                    database_text.delete("1.0", "end")
-                    database_text.insert("1.0", text)
-                    database_text.config(state="disabled")
+                        tree.insert("", "end", values=(
+                            student.usn,
+                            student.name,
+                            student.course,
+                            student.year_join,
+                            student.section,
+                            student.gender,
+                            student.attendance,
+                            student.last_attendance_time
+                        ))
                 else:
-                    database_text.config(state="normal")
-                    database_text.delete("1.0", "end")
-                    database_text.insert("1.0", "No data found")
-                    database_text.config(state="disabled")
+                    messagebox.showinfo("Info", "No student records found.")
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to fetch database: {e}")
-
-        database_text = tk.Text(view_window, wrap="word", height=20, width=140, font=('Source Code Pro', 16))
-        database_text.grid(row=0, column=0, padx=10, pady=10, columnspan=2)
-        database_text.config(state="normal")
-
-        refresh_button = Button(view_window, text="Refresh", command=show_students)
-        refresh_button.grid(row=1, column=0, padx=10, pady=10)
-
-        close_button = Button(view_window, text="Close", command=view_window.destroy)
-        close_button.grid(row=1, column=1, padx=10, pady=10)
+        
+        # Create a frame for the treeview
+        tree_frame = Frame(content_frame)
+        tree_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Create the treeview
+        columns = ("USN", "Name", "Course", "Year", "Section", "Gender", "Attendance", "Last Attendance")
+        tree = Treeview(tree_frame, columns=columns, show="headings", selectmode="browse")
+        
+        # Set column headings
+        for col in columns:
+            tree.heading(col, text=col)
+            # Set column widths
+            if col in ["USN", "Year", "Section"]:
+                tree.column(col, width=80, anchor="center")
+            elif col in ["Gender", "Attendance"]:
+                tree.column(col, width=100, anchor="center")
+            elif col == "Last Attendance":
+                tree.column(col, width=200, anchor="center")
+            else:
+                tree.column(col, width=150, anchor="w")
+        
+        # Add a scrollbar
+        scrollbar = tk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
+        tree.pack(fill="both", expand=True)
+        
+        # Add horizontal scrollbar
+        h_scrollbar = tk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+        tree.configure(xscrollcommand=h_scrollbar.set)
+        h_scrollbar.pack(side="bottom", fill="x")
+        
+        # Create button frame
+        button_frame = Frame(content_frame, bg=self.BG_COLOR)
+        button_frame.pack(pady=10)
+        
+        # Create buttons
+        refresh_button = Button(
+            button_frame,
+            text="Refresh Data",
+            command=show_students,
+            font=self.TEXT_FONT,
+            bg=self.PRIMARY_COLOR,
+            fg="white",
+            relief="flat",
+            padx=20
+        )
+        refresh_button.pack(side="left", padx=10)
+        
+        close_button = Button(
+            button_frame,
+            text="Close",
+            command=view_window.destroy,
+            font=self.TEXT_FONT,
+            bg=self.SECONDARY_COLOR,
+            fg="white",
+            relief="flat",
+            padx=20
+        )
+        close_button.pack(side="left", padx=10)
+        
+        # Load data initially
+        show_students()
 
 
 if __name__ == "__main__":

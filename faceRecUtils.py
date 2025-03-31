@@ -1,27 +1,14 @@
 import cv2
 import face_recognition
-import pickle
 import math
 import numpy as np
-import os
 import pytz
 import sys
 import requests
-from time import perf_counter, sleep
-from pyfirmata import Arduino
-import multiprocessing
+from time import perf_counter
 import datetime
 from encoding import DEFAULT_FACE_DIR_PATH
 from database import parse_all_encodings, session, Student, get_name_from_usn
-
-try:
-    ''' Connect with the arduino '''
-    board = Arduino("/dev/tty.usbmodem1301")
-    if board:
-        print("Arduino connected.")
-except Exception as e:
-    print("Error (Arduino) : Failed to connect ..")
-
 
 class FaceRecognition:
     face_locations = []
@@ -146,12 +133,6 @@ class FaceRecognition:
         img = cv2.imdecode(imgArr, -1)
         return img
 
-    @staticmethod
-    def play_buzzer():
-        board.digital[13].write(1)
-        sleep(0.5)
-        board.digital[13].write(0)
-
     def run_recognition(self) -> cv2.typing.MatLike:
         video_capture = cv2.VideoCapture(0)
 
@@ -198,19 +179,23 @@ class FaceRecognition:
 
                     # lower the face distance, better the match
                     face_distances = face_recognition.face_distance(self.known_face_encodings, face_encoding)
-                    # get index of lowest face distance
-                    best_match_index = np.argmin(face_distances)
+                    if len(face_distances) > 0: 
+                        # get index of lowest face distance
+                        best_match_index = np.argmin(face_distances)
+                        
+                        if matches[best_match_index]:
+                            usn = self.known_face_names[best_match_index]
+                            confidence: float = self.face_confidence(face_distances[best_match_index])
 
-                    if matches[best_match_index]:
-                        usn = self.known_face_names[best_match_index]
-                        confidence: float = self.face_confidence(face_distances[best_match_index])
-
-                        # Update Attendance With Set Flags
-                        if FaceRecognition.allow_attendance and (usn not in self.last_recognized_usn) and (confidence > self.MIN_CONFIDENCE_THRESHOLD):
-                            self.update_attendance(usn)
-                            self.last_recognized_usn.append(usn)
-                            # draw frame if confidence > THRESHOLD
-                            # self._draw_face_bbox(frame)
+                            # Update Attendance With Set Flags
+                            if FaceRecognition.allow_attendance and (usn not in self.last_recognized_usn) and (confidence > self.MIN_CONFIDENCE_THRESHOLD):
+                                self.update_attendance(usn)
+                                self.last_recognized_usn.append(usn)
+                                # draw frame if confidence > THRESHOLD
+                                self._draw_face_bbox(frame)
+                            
+                    else: 
+                        continue
 
                     self.face_names.append(self.desired_name_format(usn))
 

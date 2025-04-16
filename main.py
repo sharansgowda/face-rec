@@ -1,5 +1,5 @@
-from faceRecUtils import FaceRecognition
 from time import perf_counter
+from faceRecUtils import FaceRecognition
 
 if __name__ == "__main__":
     tic = perf_counter()
